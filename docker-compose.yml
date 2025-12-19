@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # Database Service
+  database-service:
+    build: ./services/database-service
+    container_name: database-service
+    ports:
+      - "8003:8003"
+    volumes:
+      - db-data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/github_statistics.db
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # GitHub Service
+  github-service:
+    build: ./services/github-service
+    container_name: github-service
+    ports:
+      - "8001:8001"
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    networks:
+      - microservices-network
+    depends_on:
+      - database-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Analytics Service (Mistral)
+  analytics-service:
+    build: ./services/analytics-service
+    container_name: analytics-service
+    ports:
+      - "8002:8002"
+    environment:
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - GITHUB_SERVICE_URL=http://github-service:8001
+      - ANALYTICS_SERVICE_URL=http://analytics-service:8002
+      - DATABASE_SERVICE_URL=http://database-service:8003
+    networks:
+      - microservices-network
+    depends_on:
+      - github-service
+      - analytics-service
+      - database-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Web Client
+  web-client:
+    build: ./clients/web-client
+    container_name: web-client
+    ports:
+      - "8080:8080"
+    environment:
+      - API_GATEWAY_URL=http://api-gateway:8000
+    networks:
+      - microservices-network
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Telegram Bot
+  telegram-bot:
+    build: ./clients/telegram-bot
+    container_name: telegram-bot
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - API_GATEWAY_URL=http://api-gateway:8000
+    networks:
+      - microservices-network
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  db-data:
+    driver: local

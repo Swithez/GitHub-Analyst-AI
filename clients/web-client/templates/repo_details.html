@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ repo_info.full_name }} - Анализ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { background: white; border-radius: 15px; padding: 30px; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .card { box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); transition: transform 0.2s; border: none; border-radius: 10px; }
+        .card:hover { transform: translateY(-5px); }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
+        .btn-primary:hover { background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); }
+        .btn-outline-secondary { transition: all 0.3s; }
+        .btn-outline-secondary:hover { background-color: #6c757d; color: white; }
+        #loadingText { font-size: 1.2em; color: #667eea; animation: pulse 1s infinite; margin-top: 15px; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .ai-analysis-section { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 20px; border-radius: 10px; margin-top: 20px; }
+        .recommendation-item { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #667eea; }
+        .insight-badge { display: inline-block; padding: 8px 15px; margin: 5px; border-radius: 20px; }
+        .strength-badge { background-color: #28a745; color: white; }
+        .weakness-badge { background-color: #dc3545; color: white; }
+        .trend-badge { background-color: #17a2b8; color: white; }
+        .contributor-avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
+        .language-bar { height: 30px; display: flex; overflow: hidden; border-radius: 5px; margin: 10px 0; }
+        .language-segment { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.85em; padding: 0 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="mb-3">
+            <a href="/" class="btn btn-outline-secondary btn-sm">← Назад к поиску</a>
+            <a href="/history" class="btn btn-outline-secondary btn-sm">История запросов</a>
+        </div>
+        
+        <h2 class="mb-4">💻 Репозиторий: <a href="{{ repo_info.html_url }}" target="_blank">{{ repo_info.full_name }}</a></h2>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Общая информация</h5>
+                <p class="card-text"><strong>Описание:</strong> {{ repo_info.description or "Нет описания." }}</p>
+                <p class="card-text"><strong>Язык:</strong> {{ repo_info.language or "Смешанный/Не указан" }}</p>
+                <div class="row">
+                    <div class="col-md-3">
+                        <span class="badge bg-warning text-dark">⭐ {{ repo_info.stargazers_count }} Stars</span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-info">👁 {{ repo_info.subscribers_count }} Watchers</span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-success">🔀 {{ repo_info.forks_count }} Forks</span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-danger">🐛 {{ repo_info.open_issues_count }} Issues</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+        
+        <h3>Анализ активности за период</h3>
+        
+        <form action="/get_stats" method="POST" id="statsForm">
+            <input type="hidden" name="owner" value="{{ owner }}">
+            <input type="hidden" name="repo_name" value="{{ repo_name }}">
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="start_date" class="form-label">Начальная дата:</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ start_date }}" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="end_date" class="form-label">Конечная дата:</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ end_date }}" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="btn-group mb-3 d-flex flex-wrap" role="group">
+                <button type="button" class="btn btn-outline-secondary" onclick="getData(30)">За месяц</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="getData(90)">За квартал</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="getData(180)">За полугодие</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="getData(365)">За год</button>
+            </div>
+            <div class="d-grid">
+                <button type="submit" id="submitBtn" class="btn btn-primary btn-lg">🔍 Получить детальную аналитику</button>
+            </div>
+        </form>
+        
+        <div id="loadingText" style="display: none;">⏳ Загрузка и анализ данных... Это может занять минуту.</div>
+
+        {% if stats %}
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title text-success">✅ Результаты анализа ({{ stats.analysis_period_days }} дней)</h5>
+                
+                <div class="row mb-3">
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-primary">{{ stats.totalCommits }}</h3>
+                        <p>Коммитов</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-info">{{ stats.totalContributors }}</h3>
+                        <p>Контрибьюторов</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-warning">{{ stats.avgCommitsPerDay }}</h3>
+                        <p>Коммитов/день</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-success">{{ stats.activityIndex }}%</h3>
+                        <p>Индекс активности</p>
+                    </div>
+                </div>
+
+                {% if stats.mostActiveDay or stats.mostActiveAuthor %}
+                <div class="alert alert-info">
+                    {% if stats.mostActiveDay %}
+                    <p><strong>📅 Самый активный день:</strong> {{ stats.mostActiveDay }}</p>
+                    {% endif %}
+                    {% if stats.mostActiveAuthor %}
+                    <p><strong>👤 Самый активный разработчик:</strong> {{ stats.mostActiveAuthor }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>Issues</h6>
+                                <p>Всего: {{ stats.totalIssues }} | Открыто: {{ stats.openIssues }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>Pull Requests</h6>
+                                <p>Всего: {{ stats.totalPRs }} | Слито: {{ stats.mergedPRs }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if stats.languages %}
+                <div class="mt-4">
+                    <h6 class="mb-2">Стек технологий:</h6>
+                    <div class="language-bar" style="height: 30px; display: flex; border-radius: 8px; overflow: hidden; background-color: #f0f0f0; border: 1px solid #ddd;">
+                        {% set total_bytes = stats.languages.values()|sum %}
+
+                        {% set colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452'] %}
+                        
+                        {% for lang, bytes in stats.languages.items() %}
+                            {% set percentage = (bytes / total_bytes * 100)|round(1) %}
+                            {% if percentage > 0.5 %}
+                                <div class="language-segment" 
+                                    style="width: {{ percentage }}%; 
+                                            background-color: {{ colors[loop.index0 % colors|length] }}; 
+                                            color: #000 !important; 
+                                            font-weight: 700; 
+                                            font-size: 11px;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            white-space: nowrap;
+                                            text-shadow: none;
+                                            border-right: 1px solid rgba(0,0,0,0.1);">
+                                    {{ lang }} {{ percentage }}%
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if stats.top_contributors %}
+                <div class="mt-3">
+                    <h6>Топ контрибьюторы:</h6>
+                    <div class="row">
+                        {% for contributor in stats.top_contributors %}
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ contributor.avatar_url }}" class="contributor-avatar" alt="{{ contributor.login }}">
+                                <div>
+                                    <a href="{{ contributor.html_url }}" target="_blank">{{ contributor.login }}</a>
+                                    <br><small>{{ contributor.contributions }} коммитов</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if stats.ai_analysis or stats.ai_summary %}
+        <div class="ai-analysis-section mt-4">
+            <h4>🤖 AI-Анализ от Mistral</h4>
+            
+            {% if stats.ai_summary %}
+            <div class="alert alert-primary">
+                <strong>Краткое резюме:</strong> {{ stats.ai_summary }}
+            </div>
+            {% endif %}
+
+            {% if stats.ai_analysis %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Детальный анализ</h5>
+                    <div style="white-space: pre-line;">{{ stats.ai_analysis }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if stats.ai_insights %}
+                {% if stats.ai_insights.strengths %}
+                <div class="mb-3">
+                    <h6>💪 Сильные стороны:</h6>
+                    {% for strength in stats.ai_insights.strengths %}
+                    <span class="insight-badge strength-badge">✓ {{ strength }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if stats.ai_insights.weaknesses %}
+                <div class="mb-3">
+                    <h6>⚠️ Слабые стороны:</h6>
+                    {% for weakness in stats.ai_insights.weaknesses %}
+                    <span class="insight-badge weakness-badge">✗ {{ weakness }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if stats.ai_insights.trends %}
+                <div class="mb-3">
+                    <h6>📈 Тренды:</h6>
+                    {% for trend in stats.ai_insights.trends %}
+                    <span class="insight-badge trend-badge">→ {{ trend }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if stats.ai_insights.health_score %}
+                <div class="mb-3">
+                    <h6>❤️ Оценка здоровья проекта: <span class="badge bg-success">{{ stats.ai_insights.health_score }}/10</span></h6>
+                </div>
+                {% endif %}
+            {% endif %}
+
+            {% if stats.ai_recommendations %}
+            <div class="mt-3">
+                <h5>💡 Рекомендации по улучшению:</h5>
+                {% for recommendation in stats.ai_recommendations %}
+                <div class="recommendation-item">
+                    {{ loop.index }}. {{ recommendation }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    <script>
+        function formatDate(date) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function getData(days) {
+            const today = new Date();
+            const start = new Date();
+            start.setDate(today.getDate() - days);
+
+            document.getElementById('end_date').value = formatDate(today);
+            document.getElementById('start_date').value = formatDate(start);
+            
+            document.getElementById('statsForm').submit();
+        }
+        
+        document.getElementById('statsForm').onsubmit = function() {
+            document.getElementById('loadingText').style.display = 'block';
+            document.getElementById('submitBtn').disabled = true;
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

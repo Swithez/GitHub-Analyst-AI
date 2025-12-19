@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GitHub Analytics - AI-анализ репозиториев</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 20px;
+        }
+        .container { 
+            background-color: #fff; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); 
+            padding: 40px; 
+            max-width: 800px;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        h1 { 
+            font-size: 3rem; 
+            font-weight: bold; 
+            text-align: center; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #6c757d;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px 0;
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        form { 
+            margin: 30px 0;
+        }
+        button[type="submit"] { 
+            margin-top: 20px; 
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 15px;
+            font-size: 1.1rem;
+        }
+        button[type="submit"]:hover { 
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-history { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .btn-history:hover { 
+            background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
+            transform: translateY(-2px);
+        }
+        .examples {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .examples h6 {
+            color: #667eea;
+            font-weight: bold;
+        }
+        .example-repo {
+            display: inline-block;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .example-repo:hover {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 GitHub Analytics</h1>
+        <p class="subtitle">Powered by AI • Анализ репозиториев с искусственным интеллектом</p>
+        
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <div class="feature-icon">📊</div>
+                    <h6>Детальная статистика</h6>
+                    <small>Коммиты, контрибьюторы, языки</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <div class="feature-icon">🤖</div>
+                    <h6>AI-Анализ</h6>
+                    <small>Mistral AI для инсайтов</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center">
+                    <div class="feature-icon">💡</div>
+                    <h6>Рекомендации</h6>
+                    <small>Советы по улучшению</small>
+                </div>
+            </div>
+        </div>
+
+        <form action="/repo/dummy/dummy" method="GET" id="repoForm">
+            <div class="row">
+                <div class="col-md-6 form-group">
+                    <label for="owner" class="form-label">👤 Владелец (Owner):</label>
+                    <input type="text" id="owner" name="owner" placeholder="facebook" class="form-control" required>
+                </div>
+                
+                <div class="col-md-6 form-group">
+                    <label for="repo_name" class="form-label">📦 Репозиторий (Repository):</label>
+                    <input type="text" id="repo_name" name="repo_name" placeholder="react" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    🚀 Начать анализ
+                </button>
+                <a href="/history" class="btn btn-history btn-lg">
+                    📜 История запросов
+                </a>
+            </div>
+        </form>
+
+        <div class="examples">
+            <h6>💡 Популярные примеры:</h6>
+            <div id="examples">
+                <span class="example-repo" onclick="fillRepo('torvalds', 'linux')">torvalds/linux</span>
+                <span class="example-repo" onclick="fillRepo('facebook', 'react')">facebook/react</span>
+                <span class="example-repo" onclick="fillRepo('microsoft', 'vscode')">microsoft/vscode</span>
+                <span class="example-repo" onclick="fillRepo('tensorflow', 'tensorflow')">tensorflow/tensorflow</span>
+                <span class="example-repo" onclick="fillRepo('vuejs', 'vue')">vuejs/vue</span>
+            </div>
+        </div>
+
+        <div class="text-center mt-4" style="color: #6c757d;">
+            <small>
+                🔒 Безопасно • 🚀 Быстро • 🆓 Бесплатно
+                <br>
+                Микросервисная архитектура • GitHub API • Mistral AI
+            </small>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('repoForm').onsubmit = function(e) {
+            var owner = document.getElementById('owner').value.trim();
+            var repo = document.getElementById('repo_name').value.trim();
+            
+            if (!owner || !repo) {
+                e.preventDefault();
+                alert('Пожалуйста, заполните оба поля!');
+                return false;
+            }
+            
+            this.action = `/repo/${owner}/${repo}`;
+        };
+
+        function fillRepo(owner, repo) {
+            document.getElementById('owner').value = owner;
+            document.getElementById('repo_name').value = repo;
+            // Добавим небольшую анимацию
+            document.getElementById('owner').style.background = '#fff3cd';
+            document.getElementById('repo_name').style.background = '#fff3cd';
+            setTimeout(() => {
+                document.getElementById('owner').style.background = '';
+                document.getElementById('repo_name').style.background = '';
+            }, 500);
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

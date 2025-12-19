@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>История запросов - GitHub Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            background-color: #fff; 
+            border-radius: 20px; 
+            padding: 30px; 
+            margin-top: 20px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
+        }
+        h1 { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 30px; 
+        }
+        .table-responsive { 
+            margin-top: 20px; 
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .table tbody tr {
+            transition: all 0.3s;
+        }
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+            transform: scale(1.01);
+        }
+        .btn-back { 
+            margin-bottom: 20px; 
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            border: none;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+        .badge {
+            font-size: 0.9em;
+            padding: 5px 10px;
+        }
+        .repo-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .repo-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        .pagination {
+            margin-top: 20px;
+        }
+        .pagination .page-link {
+            color: #667eea;
+        }
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+        .stats-summary {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="btn btn-secondary btn-back">← Назад на главную</a>
+        
+        <h1>📜 История запросов</h1>
+        
+        {% if statistics %}
+            <div class="stats-summary">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h3 class="text-primary">{{ total_records }}</h3>
+                        <p>Всего запросов</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3 class="text-success">{{ statistics|length }}</h3>
+                        <p>На текущей странице</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3 class="text-info">{{ total_pages }}</h3>
+                        <p>Всего страниц</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Репозиторий</th>
+                            <th>📊 Коммиты</th>
+                            <th>👥 Разработчики</th>
+                            <th>📈 Среднее/день</th>
+                            <th>📅 Период</th>
+                            <th>🔥 Активность</th>
+                            <th>⏰ Дата запроса</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in statistics %}
+                        <tr>
+                            <td>{{ (current_page - 1) * 20 + loop.index }}</td>
+                            <td>
+                                <a href="/repo/{{ row.owner }}/{{ row.repo_name }}" class="repo-link">
+                                    {{ row.owner }}/{{ row.repo_name }}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-primary">{{ row.total_commits }}</span></td>
+                            <td><span class="badge bg-info">{{ row.total_contributors }}</span></td>
+                            <td><span class="badge bg-success">{{ row.avg_commits_per_day|round(2) }}</span></td>
+                            <td>{{ row.analysis_period_days }} дней</td>
+                            <td>
+                                {% if row.activity_index > 50 %}
+                                <span class="badge bg-success">{{ row.activity_index|round(1) }}%</span>
+                                {% elif row.activity_index > 20 %}
+                                <span class="badge bg-warning">{{ row.activity_index|round(1) }}%</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ row.activity_index|round(1) }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ row.timestamp }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="/history?page={{ current_page - 1 }}">Назад</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page in range(1, total_pages + 1) %}
+                        {% if page == current_page %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ page }}</a></li>
+                        {% elif page >= current_page - 2 and page <= current_page + 2 %}
+                        <li class="page-item"><a class="page-link" href="/history?page={{ page }}">{{ page }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if current_page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="/history?page={{ current_page + 1 }}">Вперед</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info text-center" style="margin-top: 50px;">
+                <h4>📭 История запросов пуста</h4>
+                <p>Выполните первый анализ репозитория, чтобы увидеть его здесь!</p>
+                <a href="/" class="btn btn-primary mt-3">Начать анализ</a>
+            </div>
+        {% endif %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
